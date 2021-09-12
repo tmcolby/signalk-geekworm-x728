@@ -68,7 +68,7 @@ module.exports = function(app) {
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, VOLTAGE_REG, (err, rawData) => {
                 if (err) app.error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
-                let voltage = (rawData * 1.25 / 1000 / 16).toFixed(2);
+                let voltage = rawData * 1.25 / 1000 / 16;
                 app.debug(`battery voltage: ${voltage} VDC`);
                 app.handleMessage(plugin.id, {
                     updates: [{
@@ -84,7 +84,7 @@ module.exports = function(app) {
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, CAPACITY_REG, (err, rawData) => {
                 if (err) app.error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
-                let capacity = (rawData / 256).toFixed(1);
+                let capacity = rawData / 256;
                 app.debug(`battery capacity: ${capacity} %`);
                 app.handleMessage(plugin.id, {
                     updates: [{
