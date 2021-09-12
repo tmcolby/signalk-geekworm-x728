@@ -6,8 +6,19 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
-    "author": "tyson.colby@innotech.engineering",
+    "author": {
+        "name": "Tyson Colby",
+        "email": "tyson.colby@innotech.engineering"
+    },
     "license": "ISC",
+    "homepage": "https://github.com/tmcolby/signalk-raspberry-pi-x728#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tmcolby/signalk-raspberry-pi-x728"
+    },
+    "bugs": {
+        "url": "https://github.com/tmcolby/signalk-raspberry-pi-x728/issues"
+    },
     "keywords": [
         "signalk-node-server-plugin",
         "signalk-category-hardware"
