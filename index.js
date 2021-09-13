@@ -84,7 +84,7 @@ module.exports = function(app) {
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, CAPACITY_REG, (err, rawData) => {
                 if (err) app.error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
-                let capacity = rawData / 256;
+                let capacity = rawData / 256 / 100;
                 app.debug(`battery capacity: ${capacity} %`);
                 app.handleMessage(plugin.id, {
                     updates: [{
