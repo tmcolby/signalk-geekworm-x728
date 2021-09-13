@@ -37,12 +37,12 @@ module.exports = function(app) {
             path_voltage: {
                 type: 'string',
                 title: 'SignalK path for battery voltage',
-                default: 'environment.rpi.battery.voltage'
+                default: 'electrical.batteries.rpi.voltage'
             },
             path_capacity: {
                 type: 'string',
                 title: 'SignalK path for battery capacity',
-                default: 'environment.rpi.battery.capacity'
+                default: 'electrical.batteries.rpi.capacity.stateOfCharge'
             },
             i2c_bus: {
                 type: 'integer',
@@ -102,6 +102,7 @@ module.exports = function(app) {
             });
         }
 
+        readX728();
         // set the timer to execute reads of the i2c bus and publish signalk delta messages
         timer = setInterval(readX728, options.rate * 1000);
     }
