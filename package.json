@@ -1,7 +1,7 @@
 {
-    "name": "signalk-raspberry-pi-x728",
-    "version": "1.0.1",
-    "description": "Plugin that reports the battery charge percentage and voltage of the Geekworm x728 Raspberry Pi UPS & Power Managment Board",
+    "name": "signalk-geekworm-x728",
+    "version": "1.0.0",
+    "description": "SignalK plugin for the Geekworm X728 UPS & Power Managment Board for Raspberry Pi",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,13 +11,13 @@
         "email": "tyson.colby@innotech.engineering"
     },
     "license": "Apache-2.0",
-    "homepage": "https://github.com/tmcolby/signalk-raspberry-pi-x728#readme",
+    "homepage": "https://github.com/tmcolby/signalk-geekworm-x728#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/tmcolby/signalk-raspberry-pi-x728"
+        "url": "git+https://github.com/tmcolby/signalk-geekworm-x728"
     },
     "bugs": {
-        "url": "https://github.com/tmcolby/signalk-raspberry-pi-x728/issues"
+        "url": "https://github.com/tmcolby/signalk-geekworm-x728/issues"
     },
     "keywords": [
         "signalk-node-server-plugin",
