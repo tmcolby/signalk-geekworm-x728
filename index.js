@@ -22,17 +22,17 @@ module.exports = function(app) {
     let timer = null;
     let plugin = {};
 
-    plugin.id = 'signalk-raspberry-pi-x728';
-    plugin.name = 'Raspberry Pi x728 UPS';
-    plugin.description = 'Geekworm x728 UPS & Power Managment Board for Raspberry Pi';
+    plugin.id = 'signalk-geekworm-x728';
+    plugin.name = 'Geekworm X728 UPS';
+    plugin.description = 'Geekworm X728 UPS & Power Managment Board for Raspberry Pi';
 
     plugin.schema = {
         type: 'object',
         properties: {
             rate: {
-                title: "Reporting rate (seconds)",
                 type: 'number',
-                default: 30
+                title: "Reporting rate (seconds)",
+                default: 10
             },
             path_voltage: {
                 type: 'string',
@@ -57,16 +57,40 @@ module.exports = function(app) {
         }
     };
 
+    const error = function(err) {
+        app.error(err);
+        app.setPluginError(err.message)
+    }
+
     plugin.start = function(options) {
         function readX728() {
+            // notify server of metadata in case use of non-conventional sigk paths
+            app.handleMessage(plugin.id, {
+                updates: [{
+                    meta: [{
+                            path: options.path_voltage,
+                            value: {
+                                units: "V"
+                            }
+                        },
+                        {
+                            path: options.path_capacity,
+                            value: {
+                                units: "ratio"
+                            }
+                        }
+                    ]
+                }]
+            });
+
             // open the i2c bus
             i2c = I2C.open(options.i2c_bus || 1, (err) => {
-                if (err) app.error(err);
+                if (err) error(err)
             });
 
             // read and publish battery voltage
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, VOLTAGE_REG, (err, rawData) => {
-                if (err) app.error(err);
+                if (err) error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
                 let voltage = rawData * 1.25 / 1000 / 16;
                 app.debug(`battery voltage: ${voltage} VDC`);
@@ -82,7 +106,7 @@ module.exports = function(app) {
 
             // read and publish battery charge capacity
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, CAPACITY_REG, (err, rawData) => {
-                if (err) app.error(err);
+                if (err) error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
                 let capacity = rawData / 256 / 100;
                 app.debug(`battery capacity: ${capacity} %`);
@@ -98,10 +122,11 @@ module.exports = function(app) {
 
             // close the i2c bus
             i2c.close((err) => {
-                if (err) app.error(err);
+                if (err) error(err);
             });
         }
 
+        // initialize with some data immediately when the plugin starts
         readX728();
         // set the timer to execute reads of the i2c bus and publish signalk delta messages
         timer = setInterval(readX728, options.rate * 1000);
