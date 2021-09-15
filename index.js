@@ -63,26 +63,26 @@ module.exports = function(app) {
     }
 
     plugin.start = function(options) {
-        function readX728() {
-            // notify server of metadata in case use of non-conventional sigk paths
-            app.handleMessage(plugin.id, {
-                updates: [{
-                    meta: [{
-                            path: options.path_voltage,
-                            value: {
-                                units: "V"
-                            }
-                        },
-                        {
-                            path: options.path_capacity,
-                            value: {
-                                units: "ratio"
-                            }
+        // notify server, once, of metadata in case use of non-conventional sigk paths
+        app.handleMessage(plugin.id, {
+            updates: [{
+                meta: [{
+                        path: options.path_voltage,
+                        value: {
+                            units: "V"
                         }
-                    ]
-                }]
-            });
+                    },
+                    {
+                        path: options.path_capacity,
+                        value: {
+                            units: "ratio"
+                        }
+                    }
+                ]
+            }]
+        });
 
+        function readX728() {
             // open the i2c bus
             i2c = I2C.open(options.i2c_bus || 1, (err) => {
                 if (err) error(err)
