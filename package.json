@@ -24,6 +24,7 @@
         "signalk-category-hardware"
     ],
     "dependencies": {
-        "i2c-bus": "^5.2.2"
+        "i2c-bus": "^5.2.2",
+        "onoff": "^6.0.3"
     }
 }

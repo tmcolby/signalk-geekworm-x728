@@ -14,6 +14,8 @@
  */
 
 const I2C = require('i2c-bus')
+const Gpio = require('onoff').Gpio;
+
 const X728_ADDR = 0x36
 const VOLTAGE_REG = 0x2
 const CAPACITY_REG = 0x4
@@ -63,6 +65,63 @@ module.exports = function(app) {
     }
 
     plugin.start = function(options) {
+        // app.handleMessage(plugin.id, {
+        //     updates: [{
+        //         values: [{
+        //             path: "notifications.electrical.x728.status",
+        //             value: {
+        //                 method: [
+        //                     "visual",
+        //                     "sound"
+        //                 ],
+        //                 state: "alert",
+        //                 message: "External power loss; Running on battery."
+        //             }
+        //         }]
+        //     }]
+        // });
+
+        // external power loss notification
+        const ext_power = new Gpio(6, 'in', 'both', {
+            debounceTimeout: 100
+        });
+        ext_power.watch((err, externalPowerLoss) => {
+            if (err) {
+                error(err);
+            } else {
+                let delta = {
+                    updates: [{
+                        values: [{
+                            path: "notifications.electrical.x728.status",
+                            value: {
+                                method: [
+                                    "visual",
+                                    "sound"
+                                ],
+                                state: "",
+                                message: ""
+                            }
+                        }]
+                    }]
+                };
+                let state = delta.updates[0].values[0].value.state;
+                let message = delta.updates[0].values[0].value.message;
+                if (externalPowerLoss) {
+                    // external power loss
+                    app.debug("external power loss.  running on battery.");
+                    state = "alert";
+                    message = "External power loss; Running on battery.";
+                    app.handleMessage(plugin.id, delta);
+                } else {
+                    // external power restored
+                    app.debug("external power restored. battery charging.");
+                    state = "normal";
+                    message = "External power restored; Charging battery.";
+                    app.handleMessage(plugin.id, delta);
+                }
+            }
+        });
+
         // notify server, once, of metadata in case use of non-conventional sigk paths
         app.handleMessage(plugin.id, {
             updates: [{
