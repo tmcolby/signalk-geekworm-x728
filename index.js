@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-const I2C = require('i2c-bus')
+const I2c = require('i2c-bus')
 const Gpio = require('onoff').Gpio;
 
 const X728_ADDR = 0x36
@@ -24,13 +24,14 @@ module.exports = function(app) {
     let timer = null;
     let plugin = {};
     const extPower = new Gpio(6, 'in', 'both', {
-        debounceTimeout: 100
+        debounceTimeout: 300
     });
 
     plugin.id = 'signalk-geekworm-x728';
     plugin.name = 'Geekworm X728 UPS';
     plugin.description = 'Geekworm X728 UPS & Power Managment Board for Raspberry Pi';
 
+    // plugin options
     plugin.schema = {
         type: 'object',
         properties: {
@@ -62,34 +63,19 @@ module.exports = function(app) {
         }
     };
 
+    // common error handler
     const error = function(err) {
         app.error(err);
         app.setPluginError(err.message)
     }
 
     plugin.start = function(options) {
-        app.handleMessage(plugin.id, {
+        // *********** external power loss notification ******************
+        // signalk notification delta message prototype
+        let notificationDelta = {
             updates: [{
                 values: [{
-                    path: "notifications.electrical.x728.status",
-                    value: null
-                    // value: {
-                    //     method: [
-                    //         "visual",
-                    //         "sound"
-                    //     ],
-                    //     state: "normal",
-                    //     message: "External power loss; Running on battery."
-                    // }
-                }]
-            }]
-        });
-
-        // external power loss notification
-        let delta = {
-            updates: [{
-                values: [{
-                    path: "notifications.electrical.x728.status",
+                    path: "notifications.electrical.batteries.rpi",
                     value: {
                         method: [
                             "visual",
@@ -101,29 +87,45 @@ module.exports = function(app) {
                 }]
             }]
         };
-        let state = delta.updates[0].values[0].value.state;
-        let message = delta.updates[0].values[0].value.message;
 
+        // helper function: set signalk notification state and message
+        function setNotification(externalPowerLoss) {
+            if (externalPowerLoss) {
+                // external power loss
+                const message = "Raspberry Pi external power loss; Running on battery.";
+                notificationDelta.updates[0].values[0].value.message = message;
+                notificationDelta.updates[0].values[0].value.state = "alert";
+                app.debug(message);
+                app.handleMessage(plugin.id, notificationDelta);
+            } else {
+                // external power restored
+                const message = "Raspberry Pi external power present; Charging battery.";
+                notificationDelta.updates[0].values[0].value.message = message;
+                notificationDelta.updates[0].values[0].value.state = "normal";
+                app.debug(message);
+                app.handleMessage(plugin.id, notificationDelta);
+            }
+        }
+
+        // initialize notification state on plugin start
+        extPower.read((err, externalPowerLoss) => {
+            if (err) {
+                error(err);
+            } else {
+                setNotification(externalPowerLoss);
+            }
+        });
+
+        // notification actions on gpio change
         extPower.watch((err, externalPowerLoss) => {
             if (err) {
                 error(err);
             } else {
-                if (externalPowerLoss) {
-                    // external power loss
-                    app.debug("external power loss.  running on battery.");
-                    state = "alert";
-                    message = "External power loss; Running on battery.";
-                    app.handleMessage(plugin.id, delta);
-                } else {
-                    // external power restored
-                    app.debug("external power restored. battery charging.");
-                    state = "normal";
-                    message = "External power restored; Charging battery.";
-                    app.handleMessage(plugin.id, delta);
-                }
+                setNotification(externalPowerLoss);
             }
         });
 
+        // ************* sigkpath updates with battery voltage and capacity ************
         // notify server, once, of metadata in case use of non-conventional sigk paths
         app.handleMessage(plugin.id, {
             updates: [{
@@ -143,9 +145,10 @@ module.exports = function(app) {
             }]
         });
 
+        // signalk path updates on i2c bus read
         function readX728() {
             // open the i2c bus
-            i2c = I2C.open(options.i2c_bus || 1, (err) => {
+            i2c = I2c.open(options.i2c_bus || 1, (err) => {
                 if (err) error(err)
             });
 
@@ -169,7 +172,8 @@ module.exports = function(app) {
             i2c.readWord(Number(options.i2c_address) || X728_ADDR, CAPACITY_REG, (err, rawData) => {
                 if (err) error(err);
                 rawData = (rawData >> 8) + ((rawData & 0xff) << 8);
-                let capacity = rawData / 256 / 100;
+                let capacity = rawData / 256 / 100; //100% at 4.2VDC
+                if (capacity > 1.0) capacity = 1.0; //cap at 1.0 if small rounding eror 
                 app.debug(`battery capacity: ${capacity} %`);
                 app.handleMessage(plugin.id, {
                     updates: [{
@@ -187,12 +191,13 @@ module.exports = function(app) {
             });
         }
 
-        // initialize with some data immediately when the plugin starts
+        // initialize path with some data immediately when the plugin starts
         readX728();
-        // set the timer to execute reads of the i2c bus and publish signalk delta messages
+        // set timer interval to execute reads of the i2c bus and publish signalk delta messages
         timer = setInterval(readX728, options.rate * 1000);
     }
 
+    // on stop of plugin - cleanup
     plugin.stop = function() {
         if (timer) {
             clearInterval(timer);
