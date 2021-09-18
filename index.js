@@ -23,6 +23,9 @@ const CAPACITY_REG = 0x4
 module.exports = function(app) {
     let timer = null;
     let plugin = {};
+    const extPower = new Gpio(6, 'in', 'both', {
+        debounceTimeout: 100
+    });
 
     plugin.id = 'signalk-geekworm-x728';
     plugin.name = 'Geekworm X728 UPS';
@@ -65,47 +68,46 @@ module.exports = function(app) {
     }
 
     plugin.start = function(options) {
-        // app.handleMessage(plugin.id, {
-        //     updates: [{
-        //         values: [{
-        //             path: "notifications.electrical.x728.status",
-        //             value: {
-        //                 method: [
-        //                     "visual",
-        //                     "sound"
-        //                 ],
-        //                 state: "alert",
-        //                 message: "External power loss; Running on battery."
-        //             }
-        //         }]
-        //     }]
-        // });
+        app.handleMessage(plugin.id, {
+            updates: [{
+                values: [{
+                    path: "notifications.electrical.x728.status",
+                    value: null
+                    // value: {
+                    //     method: [
+                    //         "visual",
+                    //         "sound"
+                    //     ],
+                    //     state: "normal",
+                    //     message: "External power loss; Running on battery."
+                    // }
+                }]
+            }]
+        });
 
         // external power loss notification
-        const ext_power = new Gpio(6, 'in', 'both', {
-            debounceTimeout: 100
-        });
-        ext_power.watch((err, externalPowerLoss) => {
+        let delta = {
+            updates: [{
+                values: [{
+                    path: "notifications.electrical.x728.status",
+                    value: {
+                        method: [
+                            "visual",
+                            "sound"
+                        ],
+                        state: "",
+                        message: ""
+                    }
+                }]
+            }]
+        };
+        let state = delta.updates[0].values[0].value.state;
+        let message = delta.updates[0].values[0].value.message;
+
+        extPower.watch((err, externalPowerLoss) => {
             if (err) {
                 error(err);
             } else {
-                let delta = {
-                    updates: [{
-                        values: [{
-                            path: "notifications.electrical.x728.status",
-                            value: {
-                                method: [
-                                    "visual",
-                                    "sound"
-                                ],
-                                state: "",
-                                message: ""
-                            }
-                        }]
-                    }]
-                };
-                let state = delta.updates[0].values[0].value.state;
-                let message = delta.updates[0].values[0].value.message;
                 if (externalPowerLoss) {
                     // external power loss
                     app.debug("external power loss.  running on battery.");
@@ -196,6 +198,7 @@ module.exports = function(app) {
             clearInterval(timer);
             timeout = null;
         }
+        extPower.unexport();
     }
 
     return plugin
