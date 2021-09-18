@@ -14,6 +14,8 @@
  */
 
 const I2C = require('i2c-bus')
+const shell = require('shelljs');
+
 const X728_ADDR = 0x36
 const VOLTAGE_REG = 0x2
 const CAPACITY_REG = 0x4
@@ -63,6 +65,10 @@ module.exports = function(app) {
     }
 
     plugin.start = function(options) {
+        //if (shell.exec('sudo /usr/local/bin/x728softsd.sh').code!==0){
+        if (shell.exec('sudo bash ~/dev/signalk-geekworm-x728/sudo_x728softsd.sh').code !== 0) {
+            app.debug("raspberry pi shutdown failed!")
+        }
         // notify server, once, of metadata in case use of non-conventional sigk paths
         app.handleMessage(plugin.id, {
             updates: [{
