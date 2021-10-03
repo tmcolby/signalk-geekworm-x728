@@ -50,6 +50,12 @@ module.exports = function(app) {
                 title: 'SignalK path for battery capacity',
                 default: 'electrical.batteries.rpi.capacity.stateOfCharge'
             },
+            path_notification: {
+                type: 'string',
+                title: 'SignalK path for notification',
+		description: 'This value is appended to the SignalK path "self.notifications."',
+                default: 'electrical.batteries.rpi'
+            },
             i2c_bus: {
                 type: 'integer',
                 title: 'I2C bus number',
@@ -75,7 +81,7 @@ module.exports = function(app) {
         let notificationDelta = {
             updates: [{
                 values: [{
-                    path: "notifications.electrical.batteries.rpi",
+                    path: "notifications." + options.path_notification,
                     value: {
                         method: [
                             "visual",
@@ -88,18 +94,21 @@ module.exports = function(app) {
             }]
         };
 
-        // helper function: set signalk notification state and message
+        // set notification state and message
         function setNotification(externalPowerLoss) {
             if (externalPowerLoss) {
-                // external power loss
-                const message = "Raspberry Pi external power loss; Running on battery.";
+                // external power absent
+                const message = "External power loss; Running on battery.";
+                notificationDelta.updates[0].values[0].value.method = ["visual", "sound"];
                 notificationDelta.updates[0].values[0].value.message = message;
                 notificationDelta.updates[0].values[0].value.state = "alert";
                 app.debug(message);
                 app.handleMessage(plugin.id, notificationDelta);
             } else {
-                // external power restored
-                const message = "Raspberry Pi external power present; Charging battery.";
+                // external power present
+                const message = "External power normal; Charging battery.";
+                //notificationDelta.updates[0].values[0].value.method = [];
+                notificationDelta.updates[0].values[0].value.method = undefined;
                 notificationDelta.updates[0].values[0].value.message = message;
                 notificationDelta.updates[0].values[0].value.state = "normal";
                 app.debug(message);
