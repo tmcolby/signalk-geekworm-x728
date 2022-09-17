@@ -107,8 +107,9 @@ module.exports = function(app) {
             } else {
                 // external power present
                 const message = "External power normal; Charging battery.";
-                //notificationDelta.updates[0].values[0].value.method = [];
-                notificationDelta.updates[0].values[0].value.method = undefined;
+                // notificationDelta.updates[0].values[0].value.method = [];
+                // notificationDelta.updates[0].values[0].value.method = undefined;
+                notificationDelta.updates[0].values[0].value.method = ["visual", "sound"];
                 notificationDelta.updates[0].values[0].value.message = message;
                 notificationDelta.updates[0].values[0].value.state = "normal";
                 app.debug(message);
